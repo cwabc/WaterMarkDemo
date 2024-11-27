@@ -36,8 +36,8 @@ public class VideoWatermarkProcessor extends WatermarkProcessor {
     @Override
     public void addWatermark(InputStream originalVideoInputStream, String text, OutputStream outputVideoOutputStream) throws Exception {
         //使用javacv实现
-        File tempFileSource = WaterMarkUtil.createTempFile("watermarked-video-source", ".mp4");
-        File tempFileTarget = WaterMarkUtil.createTempFile("watermarked-video", ".mp4");
+        File tempFileSource = WaterMarkUtil.createTempFile("watermarked-video-source", "mp4");
+        File tempFileTarget = WaterMarkUtil.createTempFile("watermarked-video", "mp4");
         copyInputStreamToFile(originalVideoInputStream, tempFileSource);
         BufferedImage watermarkImage = WaterMarkUtil.createWaterMarkImage(text);
         File tempFileWatermark = WaterMarkUtil.createTempFile("watermark", "png");
