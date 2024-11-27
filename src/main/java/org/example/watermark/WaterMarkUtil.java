@@ -126,44 +126,55 @@ public class WaterMarkUtil {
     }
 
     public static BufferedImage createWaterMarkImage(String text) {
-        BufferedImage tempImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D tempG2D = tempImage.createGraphics();
-        tempG2D.setFont(new Font("SimSun", Font.BOLD, WaterMarkFontSize)); // 使用支持中文的字体
-        FontMetrics fontMetrics = tempG2D.getFontMetrics();
-        int textWidth = fontMetrics.stringWidth(text);
-        int textHeight = fontMetrics.getHeight();
-        tempG2D.dispose();
+        try {
+            BufferedImage tempImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D tempG2D = tempImage.createGraphics();
+            InputStream fontStream = WaterMarkUtil.class.getClassLoader().getResourceAsStream("Alibaba-PuHuiTi-Regular.ttf");
+            if (fontStream == null) {
+                throw new RuntimeException("Font file not found in resources");
+            }
+            Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(Font.BOLD, WaterMarkFontSize);
+            fontStream.close();
 
-        // 计算图片的宽度和高度
-        int padding = 20; // 边距
-        int width = textWidth + 2 * padding;
-        int height = textHeight + 2 * padding;
+            tempG2D.setFont(font); // 使用支持中文的字体
+            FontMetrics fontMetrics = tempG2D.getFontMetrics();
+            int textWidth = fontMetrics.stringWidth(text);
+            int textHeight = fontMetrics.getHeight();
+            tempG2D.dispose();
 
-        // 创建一个透明的BufferedImage
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = image.createGraphics();
+            // 计算图片的宽度和高度
+            int padding = 20; // 边距
+            int width = textWidth + 2 * padding;
+            int height = textHeight + 2 * padding;
 
-        // 设置背景为透明
-        g2d.setComposite(AlphaComposite.Clear);
-        g2d.fillRect(0, 0, width, height);
+            // 创建一个透明的BufferedImage
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = image.createGraphics();
 
-        // 设置文字样式
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-        g2d.setColor(Color.WHITE); // 文字颜色
-        g2d.setFont(new Font("SimSun", Font.BOLD, WaterMarkFontSize)); // 使用支持中文的字体
+            // 设置背景为透明
+            g2d.setComposite(AlphaComposite.Clear);
+            g2d.fillRect(0, 0, width, height);
 
-        // 计算文字的位置
-        int textX = padding;
-        int textY = (height + textHeight) / 2 - fontMetrics.getDescent();
+            // 设置文字样式
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+            g2d.setColor(Color.WHITE); // 文字颜色
+            g2d.setFont(font); // 使用支持中文的字体
 
-        // 绘制文字
-        g2d.drawString(text, textX, textY);
+            // 计算文字的位置
+            int textX = padding;
+            int textY = (height + textHeight) / 2 - fontMetrics.getDescent();
 
-        // 释放资源
-        g2d.dispose();
+            // 绘制文字
+            g2d.drawString(text, textX, textY);
 
-        return image;
+            // 释放资源
+            g2d.dispose();
+
+            return image;
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
 
