@@ -6,6 +6,7 @@ import org.example.watermark.factory.WatermarkProcessorFactory;
 import org.example.watermark.processor.WatermarkProcessor;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.*;
 
@@ -25,6 +26,7 @@ import java.io.*;
 public class WaterMarkUtil {
     private static final String tempFileDir = "temp/";
     private static final int WaterMarkFontSize = 70;
+    private static final int WaterMarkSpace = 100;
 
     public static String getTempFileDir() {
         return tempFileDir;
@@ -42,7 +44,7 @@ public class WaterMarkUtil {
         return tempFileDir + prefix + System.currentTimeMillis() + "." + suffix;
     }
 
-    public static String getAvailableVideoPath(String sourcePath) {
+    public static String getAvailableWaterMarkPath(String sourcePath) {
         sourcePath = sourcePath.replace("\\", "/");
         int colonIndex = sourcePath.indexOf(':');
 
@@ -105,10 +107,6 @@ public class WaterMarkUtil {
         int watermarkWidth = watermarkImage.getWidth();
         int watermarkHeight = watermarkImage.getHeight();
 
-        // 计算水印位置（右下角）
-        int x = originalWidth - watermarkWidth;
-        int y = originalHeight - watermarkHeight;
-
         // 创建一个新的BufferedImage来保存带水印的图片
         BufferedImage combinedImage = new BufferedImage(originalWidth, originalHeight, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = combinedImage.createGraphics();
@@ -116,9 +114,32 @@ public class WaterMarkUtil {
         // 绘制原始图片
         g2d.drawImage(originalImage, 0, 0, null);
 
-        // 绘制水印图片
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f)); // 设置透明度
-        g2d.drawImage(watermarkImage, x, y, null);
+        // 设置透明度
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+
+        // 计算水印图像的旋转角度和缩放比例
+        double angle = Math.toRadians(45); // 45度
+        double spacing = 50; // 水印之间的间隔
+        double effectiveWidth = watermarkWidth + spacing;
+        double scaleX = (double) originalWidth / (effectiveWidth * 3); // 确保每行至少有3个水印
+        double scaleY = scaleX; // 保持宽高比
+
+        // 创建一个AffineTransform对象来进行旋转和缩放
+        AffineTransform at = new AffineTransform();
+        at.rotate(angle); // 旋转45度
+        // 应用变换
+        g2d.setTransform(at);
+
+        // 计算需要绘制的水印数量
+        int numWatermarksX = (int) Math.ceil(originalWidth / ((watermarkWidth) + WaterMarkSpace)) + 1;
+        int numWatermarksY = (int) Math.ceil(originalHeight / ((watermarkHeight) + WaterMarkSpace)) + 1;
+
+        // 绘制多个水印图片
+        for (int i = -numWatermarksX; i <= numWatermarksX; i++) {
+            for (int j = -numWatermarksY; j <= numWatermarksY; j++) {
+                g2d.drawImage(watermarkImage, i * (watermarkWidth + WaterMarkSpace), j * (watermarkHeight + WaterMarkSpace), null);
+            }
+        }
 
         // 清理资源
         g2d.dispose();
@@ -157,7 +178,7 @@ public class WaterMarkUtil {
 
             // 设置文字样式
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f)); // 设置透明度
             g2d.setColor(Color.WHITE); // 文字颜色
             g2d.setFont(font); // 使用支持中文的字体
 
@@ -172,10 +193,33 @@ public class WaterMarkUtil {
             g2d.dispose();
 
             return image;
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+
+    public static void copyInputStreamToFile(InputStream inputStream, File file) throws IOException {
+        try (BufferedInputStream bis = new BufferedInputStream(inputStream);
+             FileOutputStream fos = new FileOutputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = bis.read(buffer)) > 0) {
+                fos.write(buffer, 0, length);
+            }
+        }
+    }
+
+    public static void copyFileToOutputStream(File file, OutputStream outputStream) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = fis.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            outputStream.flush();
+        }
+    }
 
 }

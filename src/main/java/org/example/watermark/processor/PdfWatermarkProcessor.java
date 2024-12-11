@@ -1,14 +1,15 @@
 package org.example.watermark.processor;
 
+import cn.hutool.core.io.FileUtil;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
+import org.example.watermark.WaterMarkUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 /**
  * Created by cw on 2024/11/22.
@@ -28,13 +29,16 @@ public class PdfWatermarkProcessor extends WatermarkProcessor {
 
     @Override
     public void addWatermark(InputStream sourceFileStream, String text, OutputStream targetFileStream) throws Exception {
-        PdfReader reader = new PdfReader(sourceFileStream, "pdf".getBytes());
-        // 如果是web项目，直接下载应该放到response的流里面
-        PdfStamper stamp = new PdfStamper(reader, targetFileStream);
+        File tempFileSource = WaterMarkUtil.createTempFile("watermarked-pdf-source", "pdf");
+        WaterMarkUtil.copyInputStreamToFile(sourceFileStream, tempFileSource);
+
         try {
+            PdfReader reader = new PdfReader(FileUtil.getInputStream(tempFileSource), "pdf".getBytes());
+            PdfStamper stamp = new PdfStamper(reader, targetFileStream);
             //请注意，字体这边可能会报错，请替换成当前环境下支持的字体
-            BaseFont base = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.EMBEDDED);
             Rectangle pageRect = null;
+            BaseFont base = BaseFont.createFont("ziti.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, BaseFont.EMBEDDED, FileUtil.readBytes("Alibaba-PuHuiTi-Regular.ttf"), null, true);
+
             PdfGState gs = new PdfGState();
             gs.setFillOpacity(0.3f);
             gs.setStrokeOpacity(0.4f);
@@ -68,11 +72,15 @@ public class PdfWatermarkProcessor extends WatermarkProcessor {
                 // 添加水印文字
                 under.endText();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
+
             stamp.close();// 关闭
             reader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            WaterMarkUtil.copyFileToOutputStream(tempFileSource, targetFileStream);
+        }finally {
+            tempFileSource.delete();
         }
     }
+
 }

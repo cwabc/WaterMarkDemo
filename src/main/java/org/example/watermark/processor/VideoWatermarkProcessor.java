@@ -38,7 +38,7 @@ public class VideoWatermarkProcessor extends WatermarkProcessor {
         //使用javacv实现
         File tempFileSource = WaterMarkUtil.createTempFile("watermarked-video-source", "mp4");
         File tempFileTarget = WaterMarkUtil.createTempFile("watermarked-video", "mp4");
-        copyInputStreamToFile(originalVideoInputStream, tempFileSource);
+        WaterMarkUtil.copyInputStreamToFile(originalVideoInputStream, tempFileSource);
         BufferedImage watermarkImage = WaterMarkUtil.createWaterMarkImage(text);
         File tempFileWatermark = WaterMarkUtil.createTempFile("watermark", "png");
         ImageIO.write(watermarkImage, "png", tempFileWatermark);
@@ -59,7 +59,7 @@ public class VideoWatermarkProcessor extends WatermarkProcessor {
             frameRecorder.setPixelFormat(avutil.AV_PIX_FMT_YUV420P);
             frameRecorder.setVideoCodec(avcodec.AV_CODEC_ID_H264);
             frameRecorder.setAudioCodec(avcodec.AV_CODEC_ID_AAC);
-            String watermark = String.format("movie=%s[watermark];[in][watermark]overlay=W-w-15:H-h-15:format=rgb[out]", WaterMarkUtil.getAvailableVideoPath(tempFileWatermark.getAbsolutePath()));
+            String watermark = String.format("movie=%s[watermark];[watermark]rotate=45:c=none:ow=rotw(45):oh=roth(45)[rotated];[in][rotated]overlay=(W-w)/2:(H-h)/2:format=rgb[out]", WaterMarkUtil.getAvailableWaterMarkPath(tempFileWatermark.getAbsolutePath()));
             FFmpegFrameFilter frameFilter = new FFmpegFrameFilter(watermark, width, height);
             frameFilter.setPixelFormat(avutil.AV_PIX_FMT_BGR24);
             frameFilter.start();
@@ -87,7 +87,7 @@ public class VideoWatermarkProcessor extends WatermarkProcessor {
             e.printStackTrace();
             throw e;
         } finally {
-            copyFileToOutputStream(tempFileTarget, outputVideoOutputStream);
+            WaterMarkUtil.copyFileToOutputStream(tempFileTarget, outputVideoOutputStream);
             tempFileSource.delete();
             tempFileTarget.delete();
             tempFileWatermark.delete();
@@ -157,30 +157,4 @@ public class VideoWatermarkProcessor extends WatermarkProcessor {
 
         */
     }
-
-
-
-    private void copyInputStreamToFile(InputStream inputStream, File file) throws IOException {
-        try (BufferedInputStream bis = new BufferedInputStream(inputStream);
-             FileOutputStream fos = new FileOutputStream(file)) {
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = bis.read(buffer)) > 0) {
-                fos.write(buffer, 0, length);
-            }
-        }
-    }
-
-    private void copyFileToOutputStream(File file, OutputStream outputStream) throws IOException {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = fis.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-
-            outputStream.flush();
-        }
-    }
-
 }
